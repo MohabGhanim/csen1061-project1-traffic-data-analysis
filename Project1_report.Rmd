@@ -1,0 +1,16 @@
+
+```{r}
+# Loading libraries
+requier(dplyr)
+```
+```{r}
+# Loading data
+df <- read.csv("all-semi-unique.csv")
+tbldf <- tbl_df(df)
+```
+```{r}
+col.names <- colnames(df)
+ad.cols <- which(grepl("ad", col.names))
+img.cols <- which(grepl("img", col.names, ignore.case = T))
+new.col.names <- col.names[-c(ad.cols,img.cols)]
+```
