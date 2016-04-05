@@ -135,15 +135,13 @@ other.comments <- newdf2[!(newdf2$rd.rp.cm %in% categories),]
 #Other patterns may appear such as 7adsa,khatar,3otl, a question asked by a user, or a report by by2ollak GPS service
 other.categories <- c("7adsa","khatar","3otl","question","report")
 #let's add a column category to specify the category of each comment
-newdf2 <- newdf2 %>% mutate(category = (
-  ifelse(rd.rp.cm %in% categories, 
-         categories[match(rd.rp.cm, categories)],
-         )))
+newdf2 <- newdf2 %>% mutate(category = str_extract(rd.rp.cm, paste(c(categories, other.categories), collapse = "|")))
+
 ```
 
 ```{r}
 #Checking for correlation between rd.rp.stid and rd.rp.cm
-L <- with(newdf2, ifelse(rd.rp.stid %in% categories))
+#L <- with(newdf2, ifelse(rd.rp.stid %in% categories))
 ```
 
 ```{r}
