@@ -1,16 +1,157 @@
 
 ```{r}
+rm(list = ls())
+setwd("E:/GUC/10th/Introduction to data science/Project 1")
 # Loading libraries
-requier(dplyr)
+require(dplyr)
+require(tidyr)
+require(stringr)
 ```
 ```{r}
 # Loading data
 df <- read.csv("all-semi-unique.csv")
-tbldf <- tbl_df(df)
+df <- df %>% mutate(rd.rp.cm = as.character(rd.rp.cm))
+
+# Checking for duplicates of df$rd.rp.cmid
+duplicates <- duplicated(df$rd.rp.cmid)
+n.duplicates <- sum(duplicates)
+percent.duplicates <- n.duplicates/dim(df)[1]
+print(percent.duplicates)
+# About 65% of the data is duplicated
+old.df <- df
+df <- df[!duplicates,]
+#tbldf <- tbl_df(df)
+col.names <- colnames(df)
+categories <- c("7alawa","lazeez","mashy","za7ma","mafeesh 2amal")
+```
+
+View Sample Row
+```
+crawl_date			Fri Feb  5 17:23:57 UTC 2016
+ad/aid				2538
+ad/bgcl				#003768
+ad/bgcls			#0069aa
+ad/fncl				#FFFFFF
+ad/fncls			#FFFFFF
+ad/lid				1001
+ad/logo				http://www.bey2ollak.com/downloads/logos/Pepsi_SA7EL.png
+ad/logo2x			http://www.bey2ollak.com/downloads/logos/Pepsi_SA7EL@2x.png
+ad/logoAndroidS		http://www.bey2ollak.com/downloads/logos/Pepsi_SA7EL_ANDROID_S.png
+ad/logoAndroidH		http://www.bey2ollak.com/downloads/logos/Pepsi_SA7EL_ANDROID_H.png
+ad/cm				?????? ?????? ???????? ?????????? ?????????? ???????????? ???? ???????? ???????? #??????_????????
+ad/url				http://youtu.be/aNeqShdgupY
+ad/g				1
+rd/nm				Makram 3ebeid;Autostrad To Mostafa ElNa7as
+rd/ri				678
+rd/stid				3
+rd/hr				1
+rd/mn				12
+rd/new				1
+rd/img				NA
+rd/cl				#E6E6E6
+rd/strq				1
+rd/cmrq				0
+rd/rp/nm			Tahany_Eyad
+rd/rp/fullnm		Tahany Eyad
+rd/rp/hr			18
+rd/rp/mn			38
+rd/rp/stid			2
+rd/rp/cm			lazeez
+rd/rp/cmid			9300046
+rd/rp/rpImg			NA
+rd/rp/img			NA
+rd/rp/type			0
+```
+
+```{r}
+## Removing advertisement Columns
+ad.cols <- which(grepl("ad", col.names))
 ```
 ```{r}
-col.names <- colnames(df)
-ad.cols <- which(grepl("ad", col.names))
-img.cols <- which(grepl("img", col.names, ignore.case = T))
-new.col.names <- col.names[-c(ad.cols,img.cols)]
+for(i in 1:5){print(i)}
 ```
+
+```{r}
+## Checking if image columns are useful
+img.cols <- which(grepl("img", col.names, ignore.case = T))
+```
+```{r}
+summary(df$rd.img)
+#Percentage of NAs
+sum(is.na(df$rd.img))/length(df$rd.img)
+```
+
+```{r}
+summary(df$rd.rp.img)
+sum(is.na(df$rd.rp.img))/length(df$rd.rp.img)
+```
+
+```{r}
+summary(df$rd.rp.rpImg)
+sum(is.na(df$rd.rp.rpImg))/length(df$rd.rp.rpImg)
+```
+
+```{r}
+#Check if rd.rp.type is useful
+rd.rp.type <- which(col.names == "rd.rp.type")
+summary(df$rd.rp.type)
+````
+
+```{r}
+#Removing Image Columns, crawl date, road reporter type
+newdf <- df[-c(img.cols, ad.cols, rd.rp.type)]
+```
+View example Row
+```
+rd/nm				Makram 3ebeid;Autostrad To Mostafa ElNa7as
+rd/ri				678
+rd/stid				3
+rd/hr				1
+rd/mn				12
+rd/new				1
+rd/cl				#E6E6E6
+rd/strq				1
+rd/cmrq				0
+rd/rp/nm			Tahany_Eyad
+rd/rp/fullnm		Tahany Eyad
+rd/rp/hr			18
+rd/rp/mn			38
+rd/rp/stid			2
+rd/rp/cm			lazeez
+rd/rp/cmid			9300046
+rd/rp/type			0
+```
+
+```{r}
+#splitting rd.nm column into Region,From,To
+newdf2 <- newdf %>% separate(rd.nm, c("Region", "From", "To"), sep="(( To )|;)", remove = TRUE)
+```
+
+```{r}
+#Explorign the column rd.rp.cm
+#We know there are already five categories (7alawa, lazeez, report, za7ma, mfesh amal, so2al)
+#Having a look at what other comments say
+other.comments <- newdf2[!(newdf2$rd.rp.cm %in% categories),]
+#Other patterns may appear such as 7adsa,khatar,3otl, a question asked by a user, or a report by by2ollak GPS service
+other.categories <- c("7adsa","khatar","3otl","question","report")
+#let's add a column category to specify the category of each comment
+newdf2 <- newdf2 %>% mutate(category = (
+  ifelse(rd.rp.cm %in% categories, 
+         categories[match(rd.rp.cm, categories)],
+         )))
+```
+
+```{r}
+#Checking for correlation between rd.rp.stid and rd.rp.cm
+L <- with(newdf2, ifelse(rd.rp.stid %in% categories))
+```
+
+```{r}
+#Posts by By2ollak
+by2ollaks <- which(grepl("bey2ollakgps", newdf$rd.rp.nm,ignore.case = T))
+by2ollakdf <- newdf[by2ollaks,]
+othersdf <- newdf[-by2ollaks,]
+##Percentage of posts by By2ollak
+nrow(by2ollakdf)/nrow(df)
+```
+
