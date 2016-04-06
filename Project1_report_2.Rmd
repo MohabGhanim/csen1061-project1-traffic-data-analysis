@@ -16,12 +16,12 @@ get.Category <- function(string, patterns, names){
 
 View.subset <- function(dataframe,n=10){
   rndm <- runif(n,1,nrow(dataframe))
-  head(dataframe[rndm,c("rd.rp.cm","category")],n)
+  View(dataframe[rndm,c("rd.rp.cm","category")],n)
 }
 ```
 
 ```{r}
-setwd("E:/GUC/10th/Introduction to data science/Project 1")
+setwd("D:\\Mohab\\csen1061-project1-traffic-data-analysis")
 # Loading librariesnewdflkjlk
 require(dplyr)
 require(tidyr)
@@ -217,7 +217,7 @@ x[is.na(x)] = "Unknown"
 # It is still clear we still have a lot of data that is unknown, about 18% of the data.
 # Now we try to compensate this problem
 # Look at the data points with NA category
-head(newdf2 %>% filter(is.na(category)) %>% arrange(desc(rd.rp.cm)))
+#head(newdf2 %>% filter(is.na(category)) %>% arrange(desc(rd.rp.cm)))
 # we observe the occurence of some other non formal keywords, such as "zeft", "foll", "w7esh", "khara", "zebala", "gamed". Also exists some other variations of the key word "za7ma" such as "zahma" and the occurence of multiple 'a' chatacters in between
 #also many recrods contains people asking questions, which were not caught before in our previous trick rp.rp.stid == 6, and there are people talking to each other,usually starting their sentence with @ let's catch them and put them in a category "interactions"
 ptrn.7alawa <- c("[7h]e*a*la*wa*",
@@ -229,7 +229,6 @@ ptrn.7alawa <- c("[7h]e*a*la*wa*",
                  "فل",
                  "حلو",
                  "حلاو(ة|ه)",
-                 "حناè(ç|ة)",
                  "جمي*ل",
                  "جا*مد",
                  "تهاه",
@@ -245,9 +244,9 @@ ptrn.lazeez <- c("la+z[ie]+z",
                  "لذي*ذ")
 
 ptrn.mashy <- c("ma*sh[iy]+a*",
-                "هظâèن",
                 "ماشي(ه|ة)*",
-                "شغا*ل")
+                "شغا*ل",
+                "معقو*ل")
 
 ptrn.z7ma <- c("za*[7h]a?ma+",
                "we*7e*sh",
@@ -261,15 +260,20 @@ ptrn.mfesh_aml <- c("ma*fe*sh\\s2?a*ma*l",
                     "wa*2*e*fa*",
                     "ga*[7h][ei]+m",
                     "avo*i*d",
+                    "2*a*ra*f",
                     "زفت",
                     "خرة",
+                    "م*ني+لة؟",
+                    "قر*ف*",
                     "جحي*م",
                     "وا*قف",
                     "مفيش\\sامل",
-                    "زبا*ل(ه|ة)")
+                    "زبا*ل(ه|ة)",
+                    "م*ني*ل",
+                    "م*قفو*ل")
 
 ptrn.question <- c("(.)*\\?+$",
-                   "upda+t+es?",
+                   "up(\\s)?d8*a*t*e*s?",
                    "n[aei]*za+m",
                    "(a|eh)\\se?l\\ska*la*m",
                    "g[ae]*de*d",
@@ -281,19 +285,26 @@ ptrn.question <- c("(.)*\\?+$",
 ptrn.interaction <- c("^@.")
 
 ptrn.khatar <- c("ra*da+r",
+                 "khatar",
                  "la*gna+",
                  "ka*me+n",
                  "كمي*ن",
                  "لجن(ه|ة)",
-                 "را*دا*ر")
+                 "را*دا*ر",
+                 "خطر")
 
 ptrn.7adsa <- c("7a*dsa*",
                 "accident",
                 "karsa",
                 "حا*دث(ه|ة)*")
 
-ptrn.list <- list(ptrn.7alawa, ptrn.lazeez, ptrn.mashy, ptrn.z7ma, ptrn.mfesh_aml, ptrn.question, ptrn.interaction, ptrn.khatar, ptrn.7adsa)
-ptrn.index <- c("7alawa", "lazeez", "mashy", "za7ma", "mafeesh amal", "question", "interaction", "khatar", "7adsa")
+ptrn.3otl <- c("3o*tl",
+               "[ea]\\sla*[7h]a*t",
+               "اصلاحات",
+               "ا*عطا*ل")
+
+ptrn.list <- list(ptrn.7alawa, ptrn.lazeez, ptrn.mashy, ptrn.z7ma, ptrn.mfesh_aml, ptrn.7adsa, ptrn.khatar, ptrn.3otl, ptrn.interaction, ptrn.question)
+ptrn.index <- c("7alawa", "lazeez", "mashy", "za7ma", "mafeesh amal", "7adsa","khatar", "3otl", "interaction", "question")
 ptrn.vector <- sapply(ptrn.list, paste, collapse = "|")
 
 unk <- newdf2 %>% filter(is.na(category))
@@ -306,6 +317,11 @@ newdf2 <- newdf2 %>% mutate(category = ifelse(is.na(category)&has.category!=-1,h
 unk2 <- newdf2 %>% filter(is.na(category))
 unk2.size <- nrow(unk2)
 print(unk2.size)
+
+# Let's now check the percentage of unknown data we still have
+unk2.size/nrow(newdf2)
+# Less than 10%, satisfying to some extent
+
 ```
 
 #Posts by By2ollak

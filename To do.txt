@@ -3,6 +3,8 @@ x see rows where only region and from exist
 x remove duplicates
 x split rd.rp.cm into question, report, comment, opinion
 x remove column full.name
+x switch 7adtha w update
+ split into data frames
 
 parse reports
 
@@ -49,3 +51,8 @@ separate interactions
 separate radar information
 
 percentage of accidents with respect to za7ma
+percentage of 3otl with respect to za7ma
+el shware3 elle feha 3otl
+
+
+check for information in pattern interaction
