@@ -1,33 +1,51 @@
-create date from crawl date (msh m7tganen crawl date)
 x split streets into region and from and to 
-split rd.rp.cm into question, report, comment, opinion
-change to factors
-parse comments 
-remove column name
 x see rows where only region and from exist
-fix rows where only region and from exist
 x remove duplicates
-parse arabic reports
+x split rd.rp.cm into question, report, comment, opinion
+x remove column full.name
+
+parse reports
+
+create date from crawl date (msh m7tganen crawl date)
+parse comments 
+fix rows where only region and from exist
 
 testdf2 <- testdf %>% mutate(category = ifelse(rd.rp.cm %in% categories,rd.rp.cm,NA), 
 
 1 7alawa
+	perfect
+	gamed
+	gamil
+	halawa
 2 lazeez
+	good
+	latif
 3 mashy
+	
 4 za7ma
+
 5 mfesh amal
+	ga7em
+	avoid
+	khara
+	waef
+	zeft
+
+
 6 so2al
 
+
 khatar
+	radar
+	lagna
+	kamen
 7adsa
+	
 3otl
 
-lazeeeeeeez
-radar --> khatar
-L <- with(newdf2, ifelse(rd.rp.cm %in% categories, rd.rp.cm, 
-                         ifelse()))
-
-
-6 is associated with a request
+separate reports by by2ollak into a separate dataframe
+separate questions
+separate interactions
+separate radar information
 
 percentage of accidents with respect to za7ma
