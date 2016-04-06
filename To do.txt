@@ -4,14 +4,16 @@ split rd.rp.cm into question, report, comment, opinion
 change to factors
 parse comments 
 remove column name
-see rows where only region and from exist
+x see rows where only region and from exist
+fix rows where only region and from exist
 x remove duplicates
+parse arabic reports
 
 testdf2 <- testdf %>% mutate(category = ifelse(rd.rp.cm %in% categories,rd.rp.cm,NA), 
 
 1 7alawa
 2 lazeez
-3 report
+3 mashy
 4 za7ma
 5 mfesh amal
 6 so2al
@@ -20,13 +22,12 @@ khatar
 7adsa
 3otl
 
+lazeeeeeeez
+radar --> khatar
 L <- with(newdf2, ifelse(rd.rp.cm %in% categories, rd.rp.cm, 
                          ifelse()))
 
 
-# Check for duplicates using df$rd.rp.cmid
-length(unique(df$rd.rp.cmid))/length(df$rd.rp.cmid)
-# about 34 percent of the data is duplicated
-# Removing duplicates
-unq <- which(unique(df$rd.rp.cmid))
-df <- df[unq,]
+6 is associated with a request
+
+percentage of accidents with respect to za7ma
