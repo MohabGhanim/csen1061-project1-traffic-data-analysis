@@ -16,21 +16,23 @@ get.Category <- function(string, patterns, names){
 
 View.subset <- function(dataframe,n=10){
   rndm <- runif(n,1,nrow(dataframe))
-  View(dataframe[rndm,])
+  head(dataframe[rndm,c("rd.rp.cm","category")],n)
 }
 ```
 
 ```{r}
 setwd("E:/GUC/10th/Introduction to data science/Project 1")
-# Loading libraries
+# Loading librariesnewdflkjlk
 require(dplyr)
 require(tidyr)
 require(stringr)
 require(ggplot2)
+require(readr)
 ```
 ```{r}
 # Loading data
-df <- read.csv("all-semi-unique.csv")
+df <- read_csv("all-semi-unique.csv")
+colnames(df) <- gsub("/", ".", colnames(df))
 df <- df %>% mutate(rd.rp.cm = as.character(rd.rp.cm))
 
 # Checking for duplicates of df$rd.rp.cmid
@@ -218,15 +220,66 @@ x[is.na(x)] = "Unknown"
 head(newdf2 %>% filter(is.na(category)) %>% arrange(desc(rd.rp.cm)))
 # we observe the occurence of some other non formal keywords, such as "zeft", "foll", "w7esh", "khara", "zebala", "gamed". Also exists some other variations of the key word "za7ma" such as "zahma" and the occurence of multiple 'a' chatacters in between
 #also many recrods contains people asking questions, which were not caught before in our previous trick rp.rp.stid == 6, and there are people talking to each other,usually starting their sentence with @ let's catch them and put them in a category "interactions"
-ptrn.7alawa <- c("[7h]a*la*wa*", "pe*rfe*ct", "ga+m[ei]*[dl]", "fol+")
-ptrn.lazeez <- c("la+ze+z", "la+t[ie]+f", "goo+d")
-ptrn.mashy <- c("ma*sh[iy]+a*")
-ptrn.z7ma <- c("za*[7h]a?ma+", "we*7e*sh")
-ptrn.mfesh_aml <- c("ma*fe*sh\\s2?a*ma*l","(kh|5)a*ra+", "z[ei]*ft+", "z[ei]*ba*la*", "wa*2*e*fa*","ga*[7h][ei]+m", "avo*i*d")
-ptrn.question <- c("(.)*\\?+$","upda+t+es?","n[ei]*za+m","(a|eh)\\se?l\\ska*la*m")
+ptrn.7alawa <- c("[7h]a*la*wa*",
+                 "pe*rfe*ct", 
+                 "ga+m[ei]*[dl]", 
+                 "fol+",
+                 "ta+ma+m",
+                 "????",
+                 "????????",
+                 "????????(??|??)",
+                 "??????*??",
+                 "????*????",
+                 "????????")
+
+ptrn.lazeez <- c("la+z[ie]+z", 
+                 "la+t[ie]+f", 
+                 "goo+d",
+                 "??[????]??[????]")
+
+ptrn.mashy <- c("ma*sh[iy]+a*",
+                "??????????",
+                "????????")
+
+ptrn.z7ma <- c("za*[7h]a?ma+",
+               "we*7e*sh",
+               "??*??*??*(??|??)",
+               "????*????")
+
+ptrn.mfesh_aml <- c("ma*fe*sh\\s2?a*ma*l",
+                    "(kh|5)a*ra+",
+                    "z[ei]*ft+",
+                    "z[ei]*ba*la*",
+                    "wa*2*e*fa*",
+                    "ga*[7h][ei]+m",
+                    "avo*i*d",
+                    "??????",
+                    "??????",
+                    "??????*??",
+                    "????*????*",
+                    "??????*??\\s??????",
+                    "????????(??|??)")
+
+ptrn.question <- c("(.)*\\?+$",
+                   "upda+t+es?",
+                   "n[aei]*za+m",
+                   "(a|eh)\\se?l\\ska*la*m",
+                   "??????????????",
+                   "????????????")
+
 ptrn.interaction <- c("^@.")
-ptrn.khatar <- c("ra*da+r", "la*gna+", "ka*me+n")
-ptrn.7adsa <- c("7a*dsa*", "accident", "karsa")
+
+ptrn.khatar <- c("ra*da+r",
+                 "la*gna+",
+                 "ka*me+n",
+                 "??????*??",
+                 "????????",
+                 "????*????*??")
+
+ptrn.7adsa <- c("7a*dsa*",
+                "accident",
+                "karsa",
+                "????*????(??|??)*")
 
 ptrn.list <- list(ptrn.7alawa, ptrn.lazeez, ptrn.mashy, ptrn.z7ma, ptrn.mfesh_aml, ptrn.question, ptrn.interaction, ptrn.khatar, ptrn.7adsa)
 ptrn.index <- c("7alawa", "lazeez", "mashy", "za7ma", "mafeesh amal", "question", "interaction", "khatar", "7adsa")
