@@ -5,6 +5,13 @@ x split rd.rp.cm into question, report, comment, opinion
 x remove column full.name
 x switch 7adtha w update
  split into data frames
+ 	high_way
+ 	by2ollak_reports
+ 	user_reports
+ 	opinions
+ 	interactions
+ 	questions
+
 
 parse reports
 

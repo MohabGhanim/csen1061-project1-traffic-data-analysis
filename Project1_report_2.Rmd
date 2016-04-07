@@ -3,7 +3,7 @@ rm(list = ls())
 ```
 
 ```{r functions}
-get.Category <- function(string, patterns, names){
+get.category <- function(string, patterns, names){
   match <- str_extract(tolower(string), patterns)
   index <- which(!is.na(match))
   index <- ifelse(length(index)>0, index, -1)
@@ -16,7 +16,7 @@ get.Category <- function(string, patterns, names){
 
 View.subset <- function(dataframe,n=10){
   rndm <- runif(n,1,nrow(dataframe))
-  View(dataframe[rndm,c("rd.rp.cm","category")],n)
+  View(dataframe[rndm,c("comment","category")],n)
 }
 
 concat.as.date <- function(el){
@@ -27,7 +27,7 @@ concat.as.date <- function(el){
 
 ```{r}
 setwd("D:\\Mohab\\csen1061-project1-traffic-data-analysis")
-# Loading librariesnewdflkjlk
+# Loading librariesinit.dflkjlk
 require(dplyr)
 require(tidyr)
 require(stringr)
@@ -39,9 +39,9 @@ require(lubridate)
 # Loading data
 df <- read_csv("all-semi-unique.csv")
 colnames(df) <- gsub("/", ".", colnames(df))
-df <- df %>% mutate(rd.rp.cm = as.character(rd.rp.cm))
+df <- df %>% mutate(comment = as.character(comment))
 
-# Checking for duplicates of df$rd.rp.cmid
+# Checking for duplicates of df$commentid
 duplicates <- duplicated(df$rd.rp.cmid)
 n.duplicates <- sum(duplicates)
 percent.duplicates <- n.duplicates/dim(df)[1]
@@ -126,12 +126,29 @@ summary(df$rd.rp.type)
 ```{r}
 #Removing Image Columns, road reporter type, reporter fullname
 #road reporter name and road reporter full name explain pretty much the same thing 
+
+#Checking if road columns are useful
+#View(unique(df[,c("rd.nm","rd.ri","rd.stid","rd.strq","rd.cmrq")]))
+#looking at rd.nm and rd.stid, looks like there are multiple rd.stid for the same road, which is useless, so we will remove this column
+#sa7rawi cairo to alex and other roads exist twice
+
+# Looking at what rd.strq, rd.cmrq
+# View the unique values | or may plot the names on the x axis and the value on the y axis
+# Notice that some high ways have a value or 0,1 but only in city ways have a value of 0
+# Let's see why some high ways might have 2 values
+#s <- df %>% select(rd.nm, rd.ri, rd.stid,rd.strq,rd.cmrq,rd.rp.cm)  %>% filter(rd.ri == 307 | rd.ri == 243)
+# So when the comments are related to in city status it has a value of 0, and 1 otherwise
+
+# The variable sr.cmrq has no apparent relationshp to a specific kind of data, lets 'drop it
+
+
+
 rd.rp.fullnm <- which(col.names == "rd.rp.fullnm")
 #road color is the same for all roads, so useless
 rd.cl <- which(col.names == "rd.cl")
 
-newdf <- df[-c(img.cols, ad.cols, rd.rp.type, rd.rp.fullnm, rd.cl)]
-newdf <- newdf[-c(4:9,15)]
+init.df <- df[-c(img.cols, ad.cols, rd.rp.type, rd.rp.fullnm, rd.cl)]
+init.df <- init.df[-c(4:7,9,15)]
 ```
 View example Row
 ```
@@ -156,24 +173,24 @@ rd/rp/type			0
 
 ```{r}
 #splitting rd.nm column into Region,From,To
-newdf2 <- newdf %>% separate(rd.nm, c("Region", "From", "To"), sep="(( To )|;)", remove = TRUE)
+scratch.df <- init.df %>% separate(rd.nm, c("Region", "From", "To"), sep="(( To )|;)", remove = TRUE)
 
 # Create apropriate date out of crawl date
-crawl.date <- newdf2$crawl_date
+crawl.date <- scratch.df$crawl_date
 crawl.date <- crawl.date %>% str_split("(\\s)+|:")
 crawl.date <- crawl.date %>% sapply(FUN = concat.as.date)
 crawl.date <- ymd_hms(crawl.date)
-newdf2 <- newdf2 %>% mutate(crawl_date=crawl.date)
+scratch.df <- scratch.df %>% mutate(crawl_date=crawl.date)
 
 # Subtracting as time (rd.rp.hr, rd.rp,mn) from the crawl date to get the actual date of the pots
-newdf2 <- newdf2 %>% mutate(crawl_date=
+scratch.df <- scratch.df %>% mutate(crawl_date=
                               crawl_date %m-% hours(rd.rp.hr)
                             %m-% minutes(rd.rp.mn))
 # Drop rd.rp.hr, rd.rp.mn
-newdf2 <- newdf2 %>% select(-c(rd.rp.mn,rd.rp.hr))
+scratch.df <- scratch.df %>% select(-c(rd.rp.mn,rd.rp.hr))
 
 # Give Columns meaningful names
-colnames(newdf2) <- c("date","region","from","to","road_id","reporter","tag","comment")
+colnames(scratch.df) <- c("date","region","from","to","road_id","is_high_way","reporter","tag","comment")
 
 
 ```
@@ -182,16 +199,16 @@ colnames(newdf2) <- c("date","region","from","to","road_id","reporter","tag","co
 #Explorign the column rd.rp.cm
 #We know there are already five categories (7alawa, lazeez, report, za7ma, mfesh amal, so2al)
 #Having a look at what other comments say
-other.comments <- newdf2[!(newdf2$rd.rp.cm %in% categories),]
+other.comments <- scratch.df[!(scratch.df$comment %in% categories),]
 #Other patterns may appear such as 7adsa,khatar,3otl, key wrods embedded in text
 ```
 
 ```{r}
-#Now, a quick look at the new category column and column rd.rp.stid raises the urge to question whether these two columns are related
+#Now, a quick look at the new category column and column tag raises the urge to question whether these two columns are related
 
 #See summary of variables
-stid <- newdf2$rd.rp.stid
-cat <- newdf2$category
+stid <- scratch.df$tag
+cat <- scratch.df$category
 
 summary(stid)
 summary(cat)
@@ -217,12 +234,12 @@ cat <- as.factor(cat)
 # 9 --> 3otl
 # Let's further try to categorize the data, it is observable that number 6 is associated with people making enquiries about the road status, and that there are many data points generated by reports from by2ollakgps service, let's set the category column for both of these
 
-#newdf2 <- newdf2 %>% mutate(category = ifelse(rd.rp.stid == 6, "question", category))
-newdf2 <- newdf2 %>% mutate(category = ifelse(rd.rp.nm == "bey2ollakgps", "report", NA))
+#scratch.df <- scratch.df %>% mutate(category = ifelse(tag == 6, "question", category))
+scratch.df <- scratch.df %>% mutate(category = ifelse(reporter == "bey2ollakgps", "report", NA))
 
 # and plot again
-stid <- as.factor(newdf2$rd.rp.stid)
-cat <- as.factor(newdf2$category)
+stid <- as.factor(scratch.df$tag)
+cat <- as.factor(scratch.df$category)
 
 #Plot
 #g <- ggplot(mapping = aes(cat,stid,col=stid))
@@ -232,8 +249,8 @@ cat <- as.factor(newdf2$category)
 
 ```{r}
 #Now lets see the percentages of data we have
-gpy <- newdf2 %>% group_by(category)
-c <- summarize(gpy, percentage = n()/nrow(newdf2))
+gpy <- scratch.df %>% group_by(category)
+c <- summarize(gpy, percentage = n()/nrow(scratch.df))
 x <- c[,1][[1]]
 y <- c[,2][[1]]
 x[is.na(x)] = "Unknown"
@@ -245,7 +262,7 @@ x[is.na(x)] = "Unknown"
 # It is still clear we still have a lot of data that is unknown, about 18% of the data.
 # Now we try to compensate this problem
 # Look at the data points with NA category
-#head(newdf2 %>% filter(is.na(category)) %>% arrange(desc(rd.rp.cm)))
+#head(scratch.df %>% filter(is.na(category)) %>% arrange(desc(comment)))
 # we observe the occurence of some other non formal keywords, such as "zeft", "foll", "w7esh", "khara", "zebala", "gamed". Also exists some other variations of the key word "za7ma" such as "zahma" and the occurence of multiple 'a' chatacters in between
 #also many recrods contains people asking questions, which were not caught before in our previous trick rp.rp.stid == 6, and there are people talking to each other,usually starting their sentence with @ let's catch them and put them in a category "interactions"
 ptrn.7alawa <- c("[7h]e*a*la*wa*",
@@ -335,19 +352,19 @@ ptrn.list <- list(ptrn.7alawa, ptrn.lazeez, ptrn.mashy, ptrn.z7ma, ptrn.mfesh_am
 ptrn.index <- c("7alawa", "lazeez", "mashy", "za7ma", "mafeesh amal", "7adsa","khatar", "3otl", "interaction", "question")
 ptrn.vector <- sapply(ptrn.list, paste, collapse = "|")
 
-unk <- newdf2 %>% filter(is.na(category))
+unk <- scratch.df %>% filter(is.na(category))
 unk.size <- nrow(unk)
 print(unk.size)
 
-has.category <- with(newdf2,sapply(rd.rp.cm, get.Category, patterns = ptrn.vector, names = ptrn.index))
-newdf2 <- newdf2 %>% mutate(category = ifelse(is.na(category)&has.category!=-1,has.category,category))
+has.category <- with(scratch.df,sapply(comment, get.category, patterns = ptrn.vector, names = ptrn.index))
+scratch.df <- scratch.df %>% mutate(category = ifelse(is.na(category)&has.category!=-1,has.category,category))
 
-unk2 <- newdf2 %>% filter(is.na(category))
+unk2 <- scratch.df %>% filter(is.na(category))
 unk2.size <- nrow(unk2)
 print(unk2.size)
 
 # Let's now check the percentage of unknown data we still have
-unk2.size/nrow(newdf2)
+unk2.size/nrow(scratch.df)
 # Less than 10%, satisfying to some extent
 
 ```
@@ -355,9 +372,9 @@ unk2.size/nrow(newdf2)
 ```{r}
 #The data now seems 
 #Posts by By2ollak
-#by2ollaks <- which(grepl("bey2ollakgps", newdf$rd.rp.nm,ignore.case = T))
-#by2ollakdf <- newdf[by2ollaks,]
-#othersdf <- newdf[-by2ollaks,]
+#by2ollaks <- which(grepl("bey2ollakgps", init.df$reporter,ignore.case = T))
+#by2ollakdf <- init.df[by2ollaks,]
+#othersdf <- init.df[-by2ollaks,]
 ##Percentage of posts by By2ollak
 #nrow(by2ollakdf)/nrow(df)
 
