@@ -18,6 +18,11 @@ View.subset <- function(dataframe,n=10){
   rndm <- runif(n,1,nrow(dataframe))
   View(dataframe[rndm,c("rd.rp.cm","category")],n)
 }
+
+concat.as.date <- function(el){
+  indices <- c(8,2:6)
+  return(paste(el[indices], collapse =  "-"))
+}
 ```
 
 ```{r}
@@ -28,6 +33,7 @@ require(tidyr)
 require(stringr)
 require(ggplot2)
 require(readr)
+require(lubridate)
 ```
 ```{r}
 # Loading data
@@ -123,7 +129,9 @@ summary(df$rd.rp.type)
 rd.rp.fullnm <- which(col.names == "rd.rp.fullnm")
 #road color is the same for all roads, so useless
 rd.cl <- which(col.names == "rd.cl")
+
 newdf <- df[-c(img.cols, ad.cols, rd.rp.type, rd.rp.fullnm, rd.cl)]
+newdf <- newdf[-c(4:9,15)]
 ```
 View example Row
 ```
@@ -149,6 +157,25 @@ rd/rp/type			0
 ```{r}
 #splitting rd.nm column into Region,From,To
 newdf2 <- newdf %>% separate(rd.nm, c("Region", "From", "To"), sep="(( To )|;)", remove = TRUE)
+
+# Create apropriate date out of crawl date
+crawl.date <- newdf2$crawl_date
+crawl.date <- crawl.date %>% str_split("(\\s)+|:")
+crawl.date <- crawl.date %>% sapply(FUN = concat.as.date)
+crawl.date <- ymd_hms(crawl.date)
+newdf2 <- newdf2 %>% mutate(crawl_date=crawl.date)
+
+# Subtracting as time (rd.rp.hr, rd.rp,mn) from the crawl date to get the actual date of the pots
+newdf2 <- newdf2 %>% mutate(crawl_date=
+                              crawl_date %m-% hours(rd.rp.hr)
+                            %m-% minutes(rd.rp.mn))
+# Drop rd.rp.hr, rd.rp.mn
+newdf2 <- newdf2 %>% select(-c(rd.rp.mn,rd.rp.hr))
+
+# Give Columns meaningful names
+colnames(newdf2) <- c("date","region","from","to","road_id","reporter","tag","comment")
+
+
 ```
 
 ```{r}
@@ -192,6 +219,7 @@ cat <- as.factor(cat)
 
 #newdf2 <- newdf2 %>% mutate(category = ifelse(rd.rp.stid == 6, "question", category))
 newdf2 <- newdf2 %>% mutate(category = ifelse(rd.rp.nm == "bey2ollakgps", "report", NA))
+
 # and plot again
 stid <- as.factor(newdf2$rd.rp.stid)
 cat <- as.factor(newdf2$category)
@@ -324,6 +352,8 @@ unk2.size/nrow(newdf2)
 
 ```
 
+```{r}
+#The data now seems 
 #Posts by By2ollak
 #by2ollaks <- which(grepl("bey2ollakgps", newdf$rd.rp.nm,ignore.case = T))
 #by2ollakdf <- newdf[by2ollaks,]
