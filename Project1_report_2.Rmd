@@ -407,15 +407,15 @@ summary(cat.c)
 
 
 #Plot
-#g <- ggplot(mapping = aes(cat.c,tag.c,col=tag.c))
-#g+geom_point() +geom_jitter()
+g <- ggplot(mapping = aes(cat.c,tag.c,col=tag.c))
+g+geom_point() +geom_jitter()
 ```
 
 ```{r plotting_tag_cat_scatter_plot}
 # It seems like there is something going on here, but is is not really obvious in the plot due to the different frequencies of each label/tag, let's try to see which category mined from the text relates to which tag
 tag.category <- with(scratch.df,table(tag,category))
 tag.category <- scale(tag.category)
-#levelplot(tag.category, col.regions= colorpanel(16,"moccasin","tomato2"))
+levelplot(tag.category, col.regions= colorpanel(16,"moccasin","tomato2"))
 # It is clear how the relation goes between the tag and the category, we may use this later to discover more things
 
 ```
@@ -562,7 +562,7 @@ plot.weekdays(gps.reports.df, "Kobry Kasr ElNile", "speed")
 
 
 ## Now we see what cen we extract from user reports
-```{r user_reports}
+```{r }
 user.reports.df <- user.reports.df %>% mutate(duration = str_extract(comment, "\\d+"))
 
 #Let's see the regino with the maximum number of duration records
@@ -582,7 +582,7 @@ plot.weekdays(user.reports.df, "Kobry 6 October", "duration")
 ```
 
 ```{r}
-plot.weekdays(user.reports.df, "Waslet Pyramids Heights", "duration")
+#plot.weekdays(user.reports.df, "Waslet Pyramids Heights", "duration")
 ```
 
 ```{r}
@@ -594,12 +594,3 @@ plot.weekdays(user.reports.df, "Me7war", "duration")
 ```
 
 The percentage of user reports is not that high, so let's look at another piece of the data
-```{r}
-cats <- c("7alawa","lazeez","mashy","z7ma","mfesh_amal","7adsa","khatar", "3otl")
-n <- in.city.df %>% select(date, region, category)
-n$date <- hour(n$date)
-n$category <- sapply(n$category, function(l){
-  ifelse(length(which(l == cats))>0,which(l == cats), NA)})
-
-
-```
