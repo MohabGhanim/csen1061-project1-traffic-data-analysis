@@ -64,3 +64,19 @@ el shware3 elle feha 3otl
 
 
 check for information in pattern interaction
+
+
+high.way.df <- scratch.df %>% filter(in_city == 0)
+scratch.df <- scratch.df %>% filter(in_city  != 0)
+
+gps.reports.df <- scratch.df %>% filter(reporter == "bey2ollakgps")
+scratch.df <- scratch.df %>% filter(reporter != "bey2ollakgps")
+
+questions.df <- scratch.df %>% filter(category == "question")
+scratch.df <- scratch.df %>% filter(category != "question")
+
+interactions.df <- scratch.df %>% filter(category == "interaction")
+scratch.df <- scratch.df %>% filter(category != "interaction")
+
+high.way.df <- scratch.df %>% filter(is_city_road == 0)
+scratch.df <- scratch.df %>% filter(is_city_road  != 0)

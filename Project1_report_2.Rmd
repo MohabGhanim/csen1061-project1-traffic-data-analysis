@@ -43,7 +43,8 @@ require(gplots)
 # Loading data
 df <- read_csv("all-semi-unique.csv")
 colnames(df) <- gsub("/", ".", colnames(df))
-df <- df %>% mutate(comment = as.character(rd.rp.cm))
+df <- df %>% mutate(rd.rp.cm = as.character(rd.rp.cm))
+df <- df[runif(10000,1,nrow(df)),]
 
 # Checking for duplicates of df$commentid
 duplicates <- duplicated(df$rd.rp.cmid)
@@ -239,11 +240,14 @@ ptrn.7alawa <- c("[7h]e*a*la*wa*",
                  "pe*rfe*ct", 
                  "fol+",
                  "3a*sa*l",
+                 "fa*d[iy]",
                  "فل",
                  "حلو",
                  "حلاو(ة|ه)",
                  "لوز",
-                 "عسل")
+                 "عسل",
+                 "عنب",
+                 "فا*ض[يى]")
 
 ptrn.lazeez <- c("la+z[ie]+z", 
                  "la+t[ie]+f", 
@@ -279,7 +283,7 @@ ptrn.z7ma <- c("z.*[7h]a?ma+",
                "و.*س.*خ",
                "زحا*م")
 
-ptrn.mfesh_aml <- c("ma*fe*sh\\s2?a*ma*l",
+ptrn.mfesh_aml <- c("ma*f[ei]*sh\\s2?a*ma*l",
                     "(kh|5)a*ra+",
                     "z.*ft+",
                     "z[aei]*ba*la*",
@@ -292,7 +296,7 @@ ptrn.mfesh_aml <- c("ma*fe*sh\\s2?a*ma*l",
                     "[7h]a*ra+m+",
                     "sa*wa+d",
                     "زفت*",
-                    "خر*[اهة]ة",
+                    "خر*[هةا]",
                     "م*ني+لة؟",
                     "قر+ف+",
                     "جحي*م",
@@ -302,14 +306,16 @@ ptrn.mfesh_aml <- c("ma*fe*sh\\s2?a*ma*l",
                     "م*ني*ل",
                     "م*قفو*ل",
                     "حرا*م",
-                    "سوا*د")
+                    "سوا*د",
+                    "لعن[هة]")
 
 ptrn.question <- c("(.)*\\?+$",
                    "up(\\s)?d8*a*t*e*s?",
                    "n[aei]*za+m",
                    "(a|eh)\\se?l\\ska*la*m",
                    "g[ae]*de*d",
-                   "a[kh|5]ba*r",
+                   "[2a][(kh)5]ba*r",
+                   "ka*la*m",
                    "ne*ws",
                    "[اأ]خبا*ر",
                    "نظا*م",
@@ -327,7 +333,7 @@ ptrn.khatar <- c("ra*da+r",
                  "khatar",
                  "la*gna+",
                  "ka*me+n",
-                 "كمي*ن",
+                 "كما*ي*ن",
                  "لجن(ه|ة)",
                  "را*دا*ر",
                  "خطر")
@@ -336,11 +342,13 @@ ptrn.7adsa <- c("7a*dsa*",
                 "accident",
                 "karsa",
                 "حا*دث(ه|ة)*",
-                "خا*بط")
+                "خا*بط",
+                "ت?صا*دم",
+                "م?قل.*ب")
 
 ptrn.3otl <- c("3[oaie]*t[aie]*l",
                "[ea]sla*[7h]a*t",
-               "اصلاحات",
+               ".?صل[اي]ح",
                "ا*عطا*ل")
 
 ptrn.list <- list(
@@ -376,7 +384,7 @@ unk2.size/nrow(scratch.df)
 
 ```
 
-```{r plotting_tag_cat_scatter_plot}
+```{r plotting_tag_cat_level_plot}
 #Now, a quick look at the new category column and column tag raises the urge to question whether these two columns are related
 
 #See summary of variables
@@ -391,13 +399,15 @@ summary(cat.c)
 
 
 #Plot
-g <- ggplot(mapping = aes(cat.c,tag.c,col=tag.c))
-g+geom_point() +geom_jitter()
+#g <- ggplot(mapping = aes(cat.c,tag.c,col=tag.c))
+#g+geom_point() +geom_jitter()
+```
 
+```{r plotting_tag_cat_scatter_plot}
 # It seems like there is something going on here, but is is not really obvious in the plot due to the different frequencies of each label/tag, let's try to see which category mined from the text relates to which tag
 tag.category <- with(scratch.df,table(tag,category))
 tag.category <- scale(tag.category)
-levelplot(tag.category, col.regions= colorpanel(16,"moccasin","tomato2"))
+#levelplot(tag.category, col.regions= colorpanel(16,"moccasin","tomato2"))
 # It is clear how the relation goes between the tag and the category, we may use this later to discover more things
 
 ```
@@ -427,15 +437,58 @@ cat <- as.factor(scratch.df$category)
 
 ```
 
+```{r user_reports}
+# The number of datapoints that are still uncategorized ara growing smaller, let's have a closer look at them
+
+# And the rest of the unknown data, let's have a look at it and see if we can do something useful with it 
+unk.df <- scratch.df %>% filter(is.na(category))
+  
+# there still exists a pattern in the text, although less uniform and clear than the prevRious ones, but might be usefull in upcoming explorations; some users report the state of the road and the durationit took them to pass through it, using keywords like "overall", "x minutes to pass", we will try to catch them.
+ptrn.user.reports <- c(".*(\\d)+.*دقا*[يئ]ق", 
+                       ".*(\\d)+m.*n.*t?s?")
+ptrn.list.2 <- list(
+                  "user_reports" = ptrn.user.reports
+        				  )
+
+ptrn.vector.2 <- sapply(ptrn.list.2, paste, collapse = "|")
+ptrn.names.2 <- names(ptrn.list.2)
+
+
+has.category.2 <- with(scratch.df,sapply(
+  gsub(" ", "", comment), get.category, patterns = ptrn.vector.2, names = ptrn.names.2))
+scratch.df <- scratch.df %>% mutate(category = ifelse(is.na(category)&has.category.2!=-1,has.category.2,category))
+
+```
 
 ```{r}
 #Now after we have almost done pruning the useless columsn and adding some usefuel ones, we notice that our table contains multiple values:
 #     1. Reports by by2ollakgps
-#     2. People asking questions about the condition of the road
-#     3. People sending messages to specfic people; starting with @
-#     4. People giving their opinion of in-city roads; those with in_city column of        value 1
-#     5. People giving their opinion of high-way roads; those with in_city column of       value 0
-#     6. data with unknown category 
+#     2. Reports by users
+#     3. People asking questions about the condition of the road
+#     4. People sending messages to specfic people; starting with @
+#     5. People giving their opinion of in-city roads; those with in_city column of        value 1
+#     6. People giving their opinion of high-way roads; those with in_city column of       value 0
+#     7. data with unknown category 
+#  Let's now split these different values each to a separate table of its own, and remove it from the original dataframe
+
+gps.reports.df <- scratch.df %>% filter(reporter == "bey2ollakgps")
+scratch.df <- scratch.df %>% filter(reporter != "bey2ollakgps")
+
+user.reports.df <- scratch.df %>% filter(category == "user_reports")
+scratch.df <- scratch.df %>% filter(category != "user_reports")
+
+questions.df <- scratch.df %>% filter(category == "question")
+scratch.df <- scratch.df %>% filter(category != "question")
+
+interactions.df <- scratch.df %>% filter(category == "interaction")
+scratch.df <- scratch.df %>% filter(category != "interaction")
+
+high.way.df <- scratch.df %>% filter(is_city_road == 0)
+scratch.df <- scratch.df %>% filter(is_city_road  != 0)
+
+# What remains in scratch.df now is the main 5 categories + 7adsa 3otl + khatar + uncategorazied
+in.city.df %>% scratch.df
+
 ```
 
 ```{r}
