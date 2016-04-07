@@ -594,3 +594,12 @@ plot.weekdays(user.reports.df, "Me7war", "duration")
 ```
 
 The percentage of user reports is not that high, so let's look at another piece of the data
+```{r}
+cats <- c("7alawa","lazeez","mashy","z7ma","mfesh_amal","7adsa","khatar", "3otl")
+n <- in.city.df %>% select(date, region, category)
+n$date <- hour(n$date)
+n$category <- sapply(n$category, function(l){
+  ifelse(length(which(l == cats))>0,which(l == cats), NA)})
+
+
+```
