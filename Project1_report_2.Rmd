@@ -24,6 +24,16 @@ concat.as.date <- function(el){
   indices <- c(8,2:6)
   return(paste(el[indices], collapse =  "-"))
 }
+
+plot.weekdays <- function(df, region_name){
+  x <- df %>% filter(!is.na(speed) & region == region_name)
+  x <- x %>% mutate(from = paste(from,to,sep = "-")) %>% select(-to)
+  colnames(x)[3] = "line"
+  d <- x$date %>% date %>% weekdays %>% as.factor
+  g <- x %>% ggplot(aes(x=d, y=speed, col = d)) + geom_boxplot() + geom_jitter() + ggtitle(paste(region_name,"region"))
+  g
+}
+
 ```
 
 ```{r loading_packages}
@@ -487,17 +497,66 @@ high.way.df <- scratch.df %>% filter(is_city_road == 0)
 scratch.df <- scratch.df %>% filter(is_city_road  != 0)
 
 # What remains in scratch.df now is the main 5 categories + 7adsa 3otl + khatar + uncategorazied
-in.city.df %>% scratch.df
+in.city.df <-  scratch.df
 
 ```
 
+# By2olak Reports df
+```{r by2ollak.gps.reports}
+# Now we will try to get insight in reports by by2ollak gps
+# Let's try to extract the speed from wha the reports says, we are interested in reports concerning the whole street not part of it, typically those like "Overall took [12 min] with average speed [95 km/h]" or "الطريق أخد حوالي [2 ق] ومتوسط سرعته [72 كم/س]"
+pattern1 <- "\\d+ [(ق)|(min)]"
+extracts1 <- with(gps.reports.df, sapply(comment, str_extract, pattern = pattern1))
+names(extracts1) <- c()
+minutes.c <- sapply(extracts1, str_extract, pattern = "\\d+")
+
+pattern2 <- "\\d+ [(ك)|(k)]"
+extracts2 <- with(gps.reports.df, sapply(comment, str_extract, pattern = pattern2))
+names(extracts2) <- c()
+speed.c <- sapply(extracts2, str_extract, pattern = "\\d+")
+
+whole_street <- gps.reports.df$comment %>% sapply(grepl, pattern = "(overall)|(الطريق)",ignore.case = T)
+
+gps.reports.df <- gps.reports.df %>% mutate(
+  duration = ifelse(whole_street,minutes.c,NA),
+  speed = ifelse(whole_street, speed.c,NA))
+
+gps.reports.df <- gps.reports.df %>% mutate(
+  duration = as.integer(duration), 
+  speed = as.integer(speed)
+)
+```
+
+
 ```{r}
-#The data now seems 
-#Posts by By2ollak
-#by2ollaks <- which(grepl("bey2ollakgps", init.df$reporter,ignore.case = T))
-#by2ollakdf <- init.df[by2ollaks,]
-#othersdf <- init.df[-by2ollaks,]
-##Percentage of posts by By2ollak
-#nrow(by2ollakdf)/nrow(df)
+#Let's see the regino with the maximum number of speed records
+x <- gps.reports.df %>% filter(!is.na(speed)) %>% group_by(region)
+x <- x %>% summarize(length = n()) %>% arrange(desc(length))
+head(x)
+```
+So we have Da2ery,Me7war, Sa7rawy, Autorstrad, Kobry 6 Ocotber,
+let's see on which day one can drive with maximum speed in these places
 
+```{r}
+plot.weekdays(gps.reports.df, "Da2ery")
+```
 
+```{r}
+plot.weekdays(gps.reports.df, "Me7war")
+```
+
+```{r}
+plot.weekdays(gps.reports.df, "Sa7rawy")
+```
+
+```{r}
+plot.weekdays(gps.reports.df, "Autostrad")
+```
+
+```{r}
+plot.weekdays(gps.reports.df, "Kobry 6 October")
+```
+
+```{r}
+plot.weekdays("Kobry Kasr ElNile")
+```

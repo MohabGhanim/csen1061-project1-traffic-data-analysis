@@ -80,3 +80,15 @@ scratch.df <- scratch.df %>% filter(category != "interaction")
 
 high.way.df <- scratch.df %>% filter(is_city_road == 0)
 scratch.df <- scratch.df %>% filter(is_city_road  != 0)
+
+
+الطريقأخدحوالي[2ق]ومتوسطسرعته[72كم/س]
+
+\[\dق\]
+
+Overalltook[12min]withaveragespeed[95km/h]"or"الط
+
+
+
+\[(\d)+.+\]
+\[(\d)+(\d+..\/.)\]
