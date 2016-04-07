@@ -1,6 +1,6 @@
 ```{r}
 rm(list = ls())
-Sys.setlocale("english")
+Sys.setlocale(locale = "english")
 ```
 
 ```{r functions}
@@ -26,7 +26,7 @@ concat.as.date <- function(el){
 }
 ```
 
-```{r}
+```{r loading_packages}
 setwd("D:\\Mohab\\csen1061-project1-traffic-data-analysis")
 # Loading librariesinit.dflkjlk
 require(dplyr)
@@ -35,12 +35,15 @@ require(stringr)
 require(ggplot2)
 require(readr)
 require(lubridate)
+require(lattice)
+require(gplots)
 ```
-```{r}
+
+```{r reading_data}
 # Loading data
 df <- read_csv("all-semi-unique.csv")
 colnames(df) <- gsub("/", ".", colnames(df))
-df <- df %>% mutate(comment = as.character(comment))
+df <- df %>% mutate(comment = as.character(rd.rp.cm))
 
 # Checking for duplicates of df$commentid
 duplicates <- duplicated(df$rd.rp.cmid)
@@ -245,7 +248,7 @@ ptrn.7alawa <- c("[7h]e*a*la*wa*",
 ptrn.lazeez <- c("la+z[ie]+z", 
                  "la+t[ie]+f", 
                  "ko*w*[ei]+s",
-                 "ta+ma+m",
+                 "ta+m+a+m",
                  "ga+m[ei]*[dl]", 
                  "nice",
                  "za+r[ie]+f",
@@ -259,6 +262,7 @@ ptrn.lazeez <- c("la+z[ie]+z",
                  "لذي*ذ")
 
 ptrn.mashy <- c("ma*sh[iy]+a*",
+                "sha*[(gh)8(3')]a+l",
                 "ما*شي",
                 "شغا*ل",
                 "معقو*ل",
@@ -272,7 +276,8 @@ ptrn.z7ma <- c("z.*[7h]a?ma+",
                "ز*ح*م(ة|ه)",
                "وحشة*",
                "ك.*د.*س",
-               "و.*س.*خ")
+               "و.*س.*خ",
+               "زحا*م")
 
 ptrn.mfesh_aml <- c("ma*fe*sh\\s2?a*ma*l",
                     "(kh|5)a*ra+",
@@ -284,6 +289,8 @@ ptrn.mfesh_aml <- c("ma*fe*sh\\s2?a*ma*l",
                     "blocke?d?",
                     "2*a*ra*f",
                     "ba*[(sh)t]e*[32]",
+                    "[7h]a*ra+m+",
+                    "sa*wa+d",
                     "زفت*",
                     "خر*[اهة]ة",
                     "م*ني+لة؟",
@@ -293,7 +300,9 @@ ptrn.mfesh_aml <- c("ma*fe*sh\\s2?a*ma*l",
                     "مفيش\\sامل",
                     "زبا*ل(ه|ة)",
                     "م*ني*ل",
-                    "م*قفو*ل")
+                    "م*قفو*ل",
+                    "حرا*م",
+                    "سوا*د")
 
 ptrn.question <- c("(.)*\\?+$",
                    "up(\\s)?d8*a*t*e*s?",
@@ -309,7 +318,8 @@ ptrn.question <- c("(.)*\\?+$",
                    "سبب",
                    "ع.*ر.*ف",
                    "في*ن",
-                   ".*؟+$")
+                   ".*؟+$",
+                   "اي[هة]*ه")
 
 ptrn.interaction <- c("^@.")
 
@@ -366,7 +376,7 @@ unk2.size/nrow(scratch.df)
 
 ```
 
-```{r}
+```{r plotting_tag_cat_scatter_plot}
 #Now, a quick look at the new category column and column tag raises the urge to question whether these two columns are related
 
 #See summary of variables
