@@ -4,13 +4,14 @@ x remove duplicates
 x split rd.rp.cm into question, report, comment, opinion
 x remove column full.name
 x switch 7adtha w update
+x plot relationship between tag and category 
  split into data frames
- 	high_way
  	by2ollak_reports
+ 	questions
+ 	interactions
+ 	high_way
  	user_reports
  	opinions
- 	interactions
- 	questions
 
 
 parse reports

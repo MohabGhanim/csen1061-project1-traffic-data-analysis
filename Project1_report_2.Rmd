@@ -1,9 +1,10 @@
 ```{r}
 rm(list = ls())
+Sys.setlocale("english")
 ```
 
 ```{r functions}
-get.category <- function(string, patterns, names){
+get.category <- function(string, patterns, names) {
   match <- str_extract(tolower(string), patterns)
   index <- which(!is.na(match))
   index <- ifelse(length(index)>0, index, -1)
@@ -16,7 +17,7 @@ get.category <- function(string, patterns, names){
 
 View.subset <- function(dataframe,n=10){
   rndm <- runif(n,1,nrow(dataframe))
-  View(dataframe[rndm,c("comment","category")],n)
+  View(dataframe[rndm,])
 }
 
 concat.as.date <- function(el){
@@ -130,6 +131,8 @@ summary(df$rd.rp.type)
 #Checking if road columns are useful
 #View(unique(df[,c("rd.nm","rd.ri","rd.stid","rd.strq","rd.cmrq")]))
 #looking at rd.nm and rd.stid, looks like there are multiple rd.stid for the same road, which is useless, so we will remove this column
+#relationship between road name and rd.ri
+#View(unique(df[,c("rd.nm","rd.ri")]))
 #sa7rawi cairo to alex and other roads exist twice
 
 # Looking at what rd.strq, rd.cmrq
@@ -190,35 +193,203 @@ scratch.df <- scratch.df %>% mutate(crawl_date=
 scratch.df <- scratch.df %>% select(-c(rd.rp.mn,rd.rp.hr))
 
 # Give Columns meaningful names
-colnames(scratch.df) <- c("date","region","from","to","road_id","is_high_way","reporter","tag","comment")
+colnames(scratch.df) <- c("date","region","from","to","road_id","is_city_road","reporter","tag","comment")
 
 
 ```
 
+
+```{r labeling_by2ollakgps}
+# A look at the reporter name indicates that there are some posts posted by b2yolalk gps, let's separate them, and add a new column category 
+scratch.df <- scratch.df %>% mutate(category = ifelse(reporter == "bey2ollakgps", "report", NA))
+
+```
+
 ```{r}
+#Now lets see the percentages of data we have
+#gpy <- scratch.df %>% group_by(category)
+#c <- summarize(gpy, percentage = n()/nrow(scratch.df))
+#x <- c[,1][[1]]
+#y <- c[,2][[1]]
+#x[is.na(x)] = "Unknown"
+#g <- ggplot(data = c, aes(x,y,fill = x))
+#g+geom_bar(stat="identity")
+```
+
+
+```{r looking_at_comments_column}
 #Explorign the column rd.rp.cm
 #We know there are already five categories (7alawa, lazeez, report, za7ma, mfesh amal, so2al)
 #Having a look at what other comments say
-other.comments <- scratch.df[!(scratch.df$comment %in% categories),]
+#other.comments <- scratch.df[!(scratch.df$comment %in% categories),]
 #Other patterns may appear such as 7adsa,khatar,3otl, key wrods embedded in text
+```
+
+```{r mining_comments}
+# It is still clear we still have a lot of data that is unknown, about 18% of the data.
+# Now we try to compensate this problem
+# Look at the data points with NA category
+#head(scratch.df %>% filter(is.na(category)) %>% arrange(desc(comment)))
+# we observe the occurence of some other non formal keywords, such as "zeft", "foll", "w7esh", "khara", "zebala", "gamed". Also exists some other variations of the key word "za7ma" such as "zahma" and the occurence of multiple 'a' chatacters in between
+#also many recrods contains people asking questions, which were not caught before in our previous trick rp.rp.stid == 6, and there are people talking to each other,usually starting their sentence with @ let's catch them and put them in a category "interactions"
+ptrn.7alawa <- c("[7h]e*a*la*wa*",
+                 "pe*rfe*ct", 
+                 "fol+",
+                 "3a*sa*l",
+                 "فل",
+                 "حلو",
+                 "حلاو(ة|ه)",
+                 "لوز",
+                 "عسل")
+
+ptrn.lazeez <- c("la+z[ie]+z", 
+                 "la+t[ie]+f", 
+                 "ko*w*[ei]+s",
+                 "ta+ma+m",
+                 "ga+m[ei]*[dl]", 
+                 "nice",
+                 "za+r[ie]+f",
+                 "goo+d",
+                 "ظري*ف",
+                 "جا*مد",
+                 "جمي*ل",
+                 "تما*م",
+                 "لزي*ز",
+                 "كويس",
+                 "لذي*ذ")
+
+ptrn.mashy <- c("ma*sh[iy]+a*",
+                "ما*شي",
+                "شغا*ل",
+                "معقو*ل",
+                "يعن[يى]")
+
+ptrn.z7ma <- c("z.*[7h]a?ma+",
+               "w.*7.*sh",
+               "ba*d",
+               "slow",
+                "ب.*ط.*[ءئ]",
+               "ز*ح*م(ة|ه)",
+               "وحشة*",
+               "ك.*د.*س",
+               "و.*س.*خ")
+
+ptrn.mfesh_aml <- c("ma*fe*sh\\s2?a*ma*l",
+                    "(kh|5)a*ra+",
+                    "z.*ft+",
+                    "z[aei]*ba*la*",
+                    "wa*2*a*e*fa*",
+                    "ga*[7h][ei]+m",
+                    "avo*i*d",
+                    "blocke?d?",
+                    "2*a*ra*f",
+                    "ba*[(sh)t]e*[32]",
+                    "زفت*",
+                    "خر*[اهة]ة",
+                    "م*ني+لة؟",
+                    "قر+ف+",
+                    "جحي*م",
+                    "وا*قف",
+                    "مفيش\\sامل",
+                    "زبا*ل(ه|ة)",
+                    "م*ني*ل",
+                    "م*قفو*ل")
+
+ptrn.question <- c("(.)*\\?+$",
+                   "up(\\s)?d8*a*t*e*s?",
+                   "n[aei]*za+m",
+                   "(a|eh)\\se?l\\ska*la*m",
+                   "g[ae]*de*d",
+                   "a[kh|5]ba*r",
+                   "ne*ws",
+                   "[اأ]خبا*ر",
+                   "نظا*م",
+                   "كلا*م",
+                   "جدي+د",
+                   "سبب",
+                   "ع.*ر.*ف",
+                   "في*ن",
+                   ".*؟+$")
+
+ptrn.interaction <- c("^@.")
+
+ptrn.khatar <- c("ra*da+r",
+                 "khatar",
+                 "la*gna+",
+                 "ka*me+n",
+                 "كمي*ن",
+                 "لجن(ه|ة)",
+                 "را*دا*ر",
+                 "خطر")
+
+ptrn.7adsa <- c("7a*dsa*",
+                "accident",
+                "karsa",
+                "حا*دث(ه|ة)*",
+                "خا*بط")
+
+ptrn.3otl <- c("3[oaie]*t[aie]*l",
+               "[ea]sla*[7h]a*t",
+               "اصلاحات",
+               "ا*عطا*ل")
+
+ptrn.list <- list(
+                  "question" = ptrn.question,
+                  "interaction" = ptrn.interaction, 
+                  "7adsa" = ptrn.7adsa, 
+                  "3otl" = ptrn.3otl,
+                  "khatar" = ptrn.khatar, 
+        				  "7alawa" = ptrn.7alawa, 
+                  "lazeez" = ptrn.lazeez, 
+                  "mashy" = ptrn.mashy, 
+                  "z7ma" = ptrn.z7ma, 
+                  "mfesh_aml" = ptrn.mfesh_aml
+        				  )
+
+ptrn.vector <- sapply(ptrn.list, paste, collapse = "|")
+ptrn.names <- names(ptrn.list)
+
+unk <- scratch.df %>% filter(is.na(category))
+unk.size <- nrow(unk)
+print(unk.size)
+
+has.category <- with(scratch.df,sapply(comment, get.category, patterns = ptrn.vector, names = ptrn.names))
+scratch.df <- scratch.df %>% mutate(category = ifelse(is.na(category)&has.category!=-1,has.category,category))
+
+unk2 <- scratch.df %>% filter(is.na(category))
+unk2.size <- nrow(unk2)
+print(unk2.size)
+
+# Let's now check the percentage of unknown data we still have
+unk2.size/nrow(scratch.df)
+# Less than 10%, satisfying to some extent
+
 ```
 
 ```{r}
 #Now, a quick look at the new category column and column tag raises the urge to question whether these two columns are related
 
 #See summary of variables
-stid <- scratch.df$tag
-cat <- scratch.df$category
+tag.c <- scratch.df$tag
+cat.c <- scratch.df$category
 
-summary(stid)
-summary(cat)
+tag.c <- as.factor(tag.c)
+cat.c <- as.factor(cat.c)
 
-stid <- as.factor(stid)
-cat <- as.factor(cat)
+summary(tag.c)
+summary(cat.c)
+
 
 #Plot
-#g <- ggplot(mapping = aes(cat,stid,col=stid))
-#g+geom_point() +geom_jitter()
+g <- ggplot(mapping = aes(cat.c,tag.c,col=tag.c))
+g+geom_point() +geom_jitter()
+
+# It seems like there is something going on here, but is is not really obvious in the plot due to the different frequencies of each label/tag, let's try to see which category mined from the text relates to which tag
+tag.category <- with(scratch.df,table(tag,category))
+tag.category <- scale(tag.category)
+levelplot(tag.category, col.regions= colorpanel(16,"moccasin","tomato2"))
+# It is clear how the relation goes between the tag and the category, we may use this later to discover more things
+
 ```
 
 ```{r}
@@ -235,7 +406,6 @@ cat <- as.factor(cat)
 # Let's further try to categorize the data, it is observable that number 6 is associated with people making enquiries about the road status, and that there are many data points generated by reports from by2ollakgps service, let's set the category column for both of these
 
 #scratch.df <- scratch.df %>% mutate(category = ifelse(tag == 6, "question", category))
-scratch.df <- scratch.df %>% mutate(category = ifelse(reporter == "bey2ollakgps", "report", NA))
 
 # and plot again
 stid <- as.factor(scratch.df$tag)
@@ -247,126 +417,15 @@ cat <- as.factor(scratch.df$category)
 
 ```
 
-```{r}
-#Now lets see the percentages of data we have
-gpy <- scratch.df %>% group_by(category)
-c <- summarize(gpy, percentage = n()/nrow(scratch.df))
-x <- c[,1][[1]]
-y <- c[,2][[1]]
-x[is.na(x)] = "Unknown"
-#g <- ggplot(data = c, aes(x,y,fill = x))
-#g+geom_bar(stat="identity")
-```
 
 ```{r}
-# It is still clear we still have a lot of data that is unknown, about 18% of the data.
-# Now we try to compensate this problem
-# Look at the data points with NA category
-#head(scratch.df %>% filter(is.na(category)) %>% arrange(desc(comment)))
-# we observe the occurence of some other non formal keywords, such as "zeft", "foll", "w7esh", "khara", "zebala", "gamed". Also exists some other variations of the key word "za7ma" such as "zahma" and the occurence of multiple 'a' chatacters in between
-#also many recrods contains people asking questions, which were not caught before in our previous trick rp.rp.stid == 6, and there are people talking to each other,usually starting their sentence with @ let's catch them and put them in a category "interactions"
-ptrn.7alawa <- c("[7h]e*a*la*wa*",
-                 "pe*rfe*ct", 
-                 "ga+m[ei]*[dl]", 
-                 "fol+",
-                 "ta+ma+m",
-                 "ko*w*[ei]+s",
-                 "فل",
-                 "حلو",
-                 "حلاو(ة|ه)",
-                 "جمي*ل",
-                 "جا*مد",
-                 "تهاه",
-                 "تما*م",
-                 "لوز",
-                 "عسل",
-                 "كويس")
-
-ptrn.lazeez <- c("la+z[ie]+z", 
-                 "la+t[ie]+f", 
-                 "goo+d",
-                 "لزي*ز",
-                 "لذي*ذ")
-
-ptrn.mashy <- c("ma*sh[iy]+a*",
-                "ماشي(ه|ة)*",
-                "شغا*ل",
-                "معقو*ل")
-
-ptrn.z7ma <- c("za*[7h]a?ma+",
-               "we*7e*sh",
-               "ز*ح*م(ة|ه)",
-               "وحشة*")
-
-ptrn.mfesh_aml <- c("ma*fe*sh\\s2?a*ma*l",
-                    "(kh|5)a*ra+",
-                    "z[ei]*ft+",
-                    "z[ei]*ba*la*",
-                    "wa*2*e*fa*",
-                    "ga*[7h][ei]+m",
-                    "avo*i*d",
-                    "2*a*ra*f",
-                    "زفت",
-                    "خرة",
-                    "م*ني+لة؟",
-                    "قر*ف*",
-                    "جحي*م",
-                    "وا*قف",
-                    "مفيش\\sامل",
-                    "زبا*ل(ه|ة)",
-                    "م*ني*ل",
-                    "م*قفو*ل")
-
-ptrn.question <- c("(.)*\\?+$",
-                   "up(\\s)?d8*a*t*e*s?",
-                   "n[aei]*za+m",
-                   "(a|eh)\\se?l\\ska*la*m",
-                   "g[ae]*de*d",
-                   "ne*ws",
-                   "اخبار",
-                   "نظام",
-                   "جدي+د")
-
-ptrn.interaction <- c("^@.")
-
-ptrn.khatar <- c("ra*da+r",
-                 "khatar",
-                 "la*gna+",
-                 "ka*me+n",
-                 "كمي*ن",
-                 "لجن(ه|ة)",
-                 "را*دا*ر",
-                 "خطر")
-
-ptrn.7adsa <- c("7a*dsa*",
-                "accident",
-                "karsa",
-                "حا*دث(ه|ة)*")
-
-ptrn.3otl <- c("3o*tl",
-               "[ea]\\sla*[7h]a*t",
-               "اصلاحات",
-               "ا*عطا*ل")
-
-ptrn.list <- list(ptrn.7alawa, ptrn.lazeez, ptrn.mashy, ptrn.z7ma, ptrn.mfesh_aml, ptrn.7adsa, ptrn.khatar, ptrn.3otl, ptrn.interaction, ptrn.question)
-ptrn.index <- c("7alawa", "lazeez", "mashy", "za7ma", "mafeesh amal", "7adsa","khatar", "3otl", "interaction", "question")
-ptrn.vector <- sapply(ptrn.list, paste, collapse = "|")
-
-unk <- scratch.df %>% filter(is.na(category))
-unk.size <- nrow(unk)
-print(unk.size)
-
-has.category <- with(scratch.df,sapply(comment, get.category, patterns = ptrn.vector, names = ptrn.index))
-scratch.df <- scratch.df %>% mutate(category = ifelse(is.na(category)&has.category!=-1,has.category,category))
-
-unk2 <- scratch.df %>% filter(is.na(category))
-unk2.size <- nrow(unk2)
-print(unk2.size)
-
-# Let's now check the percentage of unknown data we still have
-unk2.size/nrow(scratch.df)
-# Less than 10%, satisfying to some extent
-
+#Now after we have almost done pruning the useless columsn and adding some usefuel ones, we notice that our table contains multiple values:
+#     1. Reports by by2ollakgps
+#     2. People asking questions about the condition of the road
+#     3. People sending messages to specfic people; starting with @
+#     4. People giving their opinion of in-city roads; those with in_city column of        value 1
+#     5. People giving their opinion of high-way roads; those with in_city column of       value 0
+#     6. data with unknown category 
 ```
 
 ```{r}
