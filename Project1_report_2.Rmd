@@ -25,12 +25,10 @@ concat.as.date <- function(el){
   return(paste(el[indices], collapse =  "-"))
 }
 
-plot.weekdays <- function(df, region_name){
-  x <- df %>% filter(!is.na(speed) & region == region_name)
-  x <- x %>% mutate(from = paste(from,to,sep = "-")) %>% select(-to)
-  colnames(x)[3] = "line"
+plot.weekdays <- function(df, region_name, var){
+  x <- df %>% filter(!is.na(var) & region == region_name)
   d <- x$date %>% date %>% weekdays %>% as.factor
-  g <- x %>% ggplot(aes(x=d, y=speed, col = d)) + geom_boxplot() + geom_jitter() + ggtitle(paste(region_name,"region"))
+  g <- x %>% ggplot(aes(x=d, y=var, col = d)) + geom_boxplot() + geom_jitter() + ggtitle(paste(region_name,"region"))
   g
 }
 
@@ -454,18 +452,19 @@ cat <- as.factor(scratch.df$category)
 unk.df <- scratch.df %>% filter(is.na(category))
   
 # there still exists a pattern in the text, although less uniform and clear than the prevRious ones, but might be usefull in upcoming explorations; some users report the state of the road and the durationit took them to pass through it, using keywords like "overall", "x minutes to pass", we will try to catch them.
-ptrn.user.reports <- c(".*(\\d)+.*دقا*[يئ]ق", 
-                       ".*(\\d)+m.*n.*t?s?")
+ptrn.user.reports <- c(".*(\\d)+(\\s)*.*دقا*[يئ]ق", 
+                       ".*(\\d)+(\\s)*m.*n.*t?s?")
 ptrn.list.2 <- list(
-                  "user_reports" = ptrn.user.reports
+                  "user_report" = ptrn.user.reports
         				  )
 
 ptrn.vector.2 <- sapply(ptrn.list.2, paste, collapse = "|")
 ptrn.names.2 <- names(ptrn.list.2)
 
 
-has.category.2 <- with(scratch.df,sapply(
-  gsub(" ", "", comment), get.category, patterns = ptrn.vector.2, names = ptrn.names.2))
+#has.category.2 <- with(scratch.df,sapply(
+#  gsub(" ", "", comment), get.category, patterns = ptrn.vector.2, names = ptrn.names.2))
+has.category.2 <- with(scratch.df,sapply(comment, get.category, patterns = ptrn.vector.2, names = ptrn.names.2))
 scratch.df <- scratch.df %>% mutate(category = ifelse(is.na(category)&has.category.2!=-1,has.category.2,category))
 
 ```
@@ -484,8 +483,8 @@ scratch.df <- scratch.df %>% mutate(category = ifelse(is.na(category)&has.catego
 gps.reports.df <- scratch.df %>% filter(reporter == "bey2ollakgps")
 scratch.df <- scratch.df %>% filter(reporter != "bey2ollakgps")
 
-user.reports.df <- scratch.df %>% filter(category == "user_reports")
-scratch.df <- scratch.df %>% filter(category != "user_reports")
+user.reports.df <- scratch.df %>% filter(category == "user_report")
+scratch.df <- scratch.df %>% filter(category != "user_report")
 
 questions.df <- scratch.df %>% filter(category == "question")
 scratch.df <- scratch.df %>% filter(category != "question")
@@ -538,25 +537,60 @@ So we have Da2ery,Me7war, Sa7rawy, Autorstrad, Kobry 6 Ocotber,
 let's see on which day one can drive with maximum speed in these places
 
 ```{r}
-plot.weekdays(gps.reports.df, "Da2ery")
+plot.weekdays(gps.reports.df, "Da2ery", "speed")
 ```
 
 ```{r}
-plot.weekdays(gps.reports.df, "Me7war")
+plot.weekdays(gps.reports.df, "Me7war", "speed")
 ```
 
 ```{r}
-plot.weekdays(gps.reports.df, "Sa7rawy")
+plot.weekdays(gps.reports.df, "Sa7rawy", "speed")
 ```
 
 ```{r}
-plot.weekdays(gps.reports.df, "Autostrad")
+plot.weekdays(gps.reports.df, "Autostrad", "speed")
 ```
 
 ```{r}
-plot.weekdays(gps.reports.df, "Kobry 6 October")
+plot.weekdays(gps.reports.df, "Kobry 6 October", "speed")
 ```
 
 ```{r}
-plot.weekdays("Kobry Kasr ElNile")
+plot.weekdays(gps.reports.df, "Kobry Kasr ElNile", "speed")
 ```
+
+
+## Now we see what cen we extract from user reports
+```{r user_reports}
+user.reports.df <- user.reports.df %>% mutate(duration = str_extract(comment, "\\d+"))
+
+#Let's see the regino with the maximum number of duration records
+x <- user.reports.df %>% filter(!is.na(duration)) %>% group_by(region)
+x <- x %>% summarize(length = n()) %>% arrange(desc(length))
+head(x)
+```
+We will have a look at each of 
+Da2ery ,Kobry 6 October, Waslet Pyramids Heights, Kornich ElNile, Me7war 
+
+```{r}
+plot.weekdays(user.reports.df, "Da2ery", "duration")
+```
+
+```{r}
+plot.weekdays(user.reports.df, "Kobry 6 October", "duration")
+```
+
+```{r}
+plot.weekdays(user.reports.df, "Waslet Pyramids Heights", "duration")
+```
+
+```{r}
+plot.weekdays(user.reports.df, "Kornich ElNile", "duration")
+```
+
+```{r}
+plot.weekdays(user.reports.df, "Me7war", "duration")
+```
+
+The percentage of user reports is not that high, so let's look at another piece of the data
