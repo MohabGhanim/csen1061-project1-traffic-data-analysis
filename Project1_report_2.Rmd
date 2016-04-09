@@ -52,7 +52,7 @@ require(gplots)
 df <- read_csv("all-semi-unique.csv")
 colnames(df) <- gsub("/", ".", colnames(df))
 df <- df %>% mutate(rd.rp.cm = as.character(rd.rp.cm))
-df <- df[runif(10000,1,nrow(df)),]
+#df <- df[runif(10000,1,nrow(df)),]
 
 # Checking for duplicates of df$commentid
 duplicates <- duplicated(df$rd.rp.cmid)
@@ -407,15 +407,15 @@ summary(cat.c)
 
 
 #Plot
-g <- ggplot(mapping = aes(cat.c,tag.c,col=tag.c))
-g+geom_point() +geom_jitter()
+#g <- ggplot(mapping = aes(cat.c,tag.c,col=tag.c))
+#g+geom_point() +geom_jitter()
 ```
 
 ```{r plotting_tag_cat_scatter_plot}
 # It seems like there is something going on here, but is is not really obvious in the plot due to the different frequencies of each label/tag, let's try to see which category mined from the text relates to which tag
 tag.category <- with(scratch.df,table(tag,category))
 tag.category <- scale(tag.category)
-levelplot(tag.category, col.regions= colorpanel(16,"moccasin","tomato2"))
+#levelplot(tag.category, col.regions= colorpanel(16,"moccasin","tomato2"))
 # It is clear how the relation goes between the tag and the category, we may use this later to discover more things
 
 ```
@@ -537,32 +537,32 @@ So we have Da2ery,Me7war, Sa7rawy, Autorstrad, Kobry 6 Ocotber,
 let's see on which day one can drive with maximum speed in these places
 
 ```{r}
-plot.weekdays(gps.reports.df, "Da2ery", "speed")
+#plot.weekdays(gps.reports.df, "Da2ery", "speed")
 ```
 
 ```{r}
-plot.weekdays(gps.reports.df, "Me7war", "speed")
+#plot.weekdays(gps.reports.df, "Me7war", "speed")
 ```
 
 ```{r}
-plot.weekdays(gps.reports.df, "Sa7rawy", "speed")
+#plot.weekdays(gps.reports.df, "Sa7rawy", "speed")
 ```
 
 ```{r}
-plot.weekdays(gps.reports.df, "Autostrad", "speed")
+#plot.weekdays(gps.reports.df, "Autostrad", "speed")
 ```
 
 ```{r}
-plot.weekdays(gps.reports.df, "Kobry 6 October", "speed")
+#plot.weekdays(gps.reports.df, "Kobry 6 October", "speed")
 ```
 
 ```{r}
-plot.weekdays(gps.reports.df, "Kobry Kasr ElNile", "speed")
+#plot.weekdays(gps.reports.df, "Kobry Kasr ElNile", "speed")
 ```
 
 
 ## Now we see what cen we extract from user reports
-```{r }
+```{r user_reports}
 user.reports.df <- user.reports.df %>% mutate(duration = str_extract(comment, "\\d+"))
 
 #Let's see the regino with the maximum number of duration records
@@ -574,11 +574,11 @@ We will have a look at each of
 Da2ery ,Kobry 6 October, Waslet Pyramids Heights, Kornich ElNile, Me7war 
 
 ```{r}
-plot.weekdays(user.reports.df, "Da2ery", "duration")
+#plot.weekdays(user.reports.df, "Da2ery", "duration")
 ```
 
 ```{r}
-plot.weekdays(user.reports.df, "Kobry 6 October", "duration")
+#plot.weekdays(user.reports.df, "Kobry 6 October", "duration")
 ```
 
 ```{r}
@@ -586,11 +586,50 @@ plot.weekdays(user.reports.df, "Kobry 6 October", "duration")
 ```
 
 ```{r}
-plot.weekdays(user.reports.df, "Kornich ElNile", "duration")
+#plot.weekdays(user.reports.df, "Kornich ElNile", "duration")
 ```
 
 ```{r}
-plot.weekdays(user.reports.df, "Me7war", "duration")
+#plot.weekdays(user.reports.df, "Me7war", "duration")
 ```
 
 The percentage of user reports is not that high, so let's look at another piece of the data
+
+```{r}
+n <- in.city.df %>% group_by(region) %>% summarize(n=n()) %>% arrange(desc(n))
+print(x)
+# So the most three most big numbers are Da2ery, kobry 6 October
+```
+
+```{r}
+day.heat.map <- function(df, region_name){
+  x <- df %>% filter(region == region_name) %>% 
+    mutate(date = hour(date)) %>% 
+    mutate(line = paste(from,to,sep="-")) %>%
+    select(date,line,category)
+    print(nrow(x))
+ cats <- c("7alawa","lazeez","mashy","z7ma","mfesh_amal","7adsa","3otl")
+ cats.as.nums <- x$category %>% match(cats)
+ 
+ x <- x %>% mutate(category = cats.as.nums) %>%
+   group_by(date,line) %>% 
+   summarize(avg.cat = mean(category)) %>% 
+   spread(line, avg.cat)
+ 
+ x <- x[,-1]
+ x <- x %>% as.matrix
+ levelplot(x, col.regions=colorpanel(16,"moccasin","orangered3"),
+           scales = list(x = list(at=c(0:24),
+                                  labels=c(0:24)
+                                  )
+                         )
+           )
+}
+
+day.heat.map(in.city.df, "Da2ery")
+day.heat.map(in.city.df, "Kobry 6 October")
+day.heat.map(in.city.df, "Sala7 Salem")
+day.heat.map(in.city.df, "Me7war")
+
+
+```
